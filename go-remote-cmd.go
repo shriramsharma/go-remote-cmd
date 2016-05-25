@@ -7,6 +7,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"time"
 
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
@@ -29,6 +30,7 @@ func executeCommand(ip string, command string, sshConfig *ssh.ClientConfig) {
 	}
 
 	session, err := connection.NewSession()
+	fmt.Println("New session")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -36,6 +38,7 @@ func executeCommand(ip string, command string, sshConfig *ssh.ClientConfig) {
 
 	stdout, err := session.StdoutPipe()
 	if err != nil {
+		log.Fatal(err)
 	}
 	go io.Copy(os.Stdout, stdout)
 
@@ -69,6 +72,7 @@ func main() {
 	defer file.Close()
 
 	for {
+		time.Sleep(time.Second)
 	}
 
 }
