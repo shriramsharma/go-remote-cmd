@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"io"
 	"log"
 	"net"
 	"os"
@@ -40,7 +39,16 @@ func executeCommand(ip string, command string, sshConfig *ssh.ClientConfig) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	go io.Copy(os.Stdout, stdout)
+
+	scanner := bufio.NewScanner(stdout)
+
+	go func() {
+		for scanner.Scan() {
+			fmt.Printf("%s %s\n", "\x1b[36m"+ip+"\x1b[0m", scanner.Text())
+		}
+	}()
+
+	//go io.Copy(os.Stdout, stdout)
 
 	if err := session.Run(command); err != nil {
 		log.Fatal(err)
@@ -72,7 +80,7 @@ func main() {
 	defer file.Close()
 
 	for {
-		time.Sleep(time.Second * 500)
+		time.Sleep(time.Second)
 	}
 
 }
