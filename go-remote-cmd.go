@@ -6,7 +6,7 @@ import (
 	"log"
 	"net"
 	"os"
-	"time"
+	"sync"
 
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
@@ -61,26 +61,31 @@ func main() {
 	ipsFile := os.Args[1]
 	command := os.Args[2]
 
+	var wg sync.WaitGroup
+
 	sshConfig := &ssh.ClientConfig{
 		User: "app",
 		Auth: []ssh.AuthMethod{SSHAgent()},
 	}
 
+	i := 0
+
 	file, err := os.Open(ipsFile)
 	if err == nil {
 		scanner := bufio.NewScanner(file)
 		for scanner.Scan() {
+			i++
+			wg.Add(i)
 			ip := scanner.Text()
 			fmt.Println(ip)
 			go func(ip string) {
+				defer wg.Done()
 				executeCommand(ip, command, sshConfig)
 			}(ip)
 		}
 	}
 	defer file.Close()
 
-	for {
-		time.Sleep(time.Second)
-	}
+	wg.Wait()
 
 }
