@@ -29,7 +29,6 @@ func executeCommand(ip string, command string, sshConfig *ssh.ClientConfig) {
 	}
 
 	session, err := connection.NewSession()
-	fmt.Println("New session")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -77,7 +76,6 @@ func main() {
 			i++
 			wg.Add(i)
 			ip := scanner.Text()
-			fmt.Println(ip)
 			go func(ip string) {
 				defer wg.Done()
 				executeCommand(ip, command, sshConfig)
