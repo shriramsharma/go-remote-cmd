@@ -72,7 +72,7 @@ func main() {
 	defer file.Close()
 
 	for {
-		time.Sleep(time.Second)
+		time.Sleep(time.Second * 500)
 	}
 
 }
