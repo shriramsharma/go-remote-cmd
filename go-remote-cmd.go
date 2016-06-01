@@ -6,11 +6,17 @@ import (
 	"log"
 	"net"
 	"os"
+	"os/signal"
 	"sync"
 
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
 )
+
+type allSessions struct {
+	session *ssh.Session
+	host    string
+}
 
 // SSHAgent Authenticate using ssh private key.
 // Reads the private key cert from the ssh agent of the operating system
@@ -21,7 +27,7 @@ func SSHAgent() ssh.AuthMethod {
 	return nil
 }
 
-func executeCommand(ip string, command string, sshConfig *ssh.ClientConfig) {
+func executeCommand(ip string, command string, sshConfig *ssh.ClientConfig, s *[]allSessions) {
 	host := fmt.Sprintf("%s:%s", ip, "22")
 	connection, err := ssh.Dial("tcp", host, sshConfig)
 	if err != nil {
@@ -32,7 +38,8 @@ func executeCommand(ip string, command string, sshConfig *ssh.ClientConfig) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer session.Close()
+
+	*s = append(*s, allSessions{session, ip})
 
 	stdout, err := session.StdoutPipe()
 	if err != nil {
@@ -47,12 +54,23 @@ func executeCommand(ip string, command string, sshConfig *ssh.ClientConfig) {
 		}
 	}()
 
-	//go io.Copy(os.Stdout, stdout)
-
 	if err := session.Run(command); err != nil {
 		log.Fatal(err)
 	}
 
+}
+
+// HandleControlCGracefully This function would handle ctrl-C gracefully by closing all the remote sessions.
+func HandleControlCGracefully(sessions *[]allSessions) {
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, os.Interrupt)
+
+	<-sigs
+	for _, session := range *sessions {
+		fmt.Printf("Closing session on host: %s\n", session.host)
+		session.session.Close()
+	}
+	os.Exit(0)
 }
 
 func main() {
@@ -61,6 +79,7 @@ func main() {
 	command := os.Args[2]
 
 	var wg sync.WaitGroup
+	var sessions []allSessions
 
 	sshConfig := &ssh.ClientConfig{
 		User: "app",
@@ -78,11 +97,13 @@ func main() {
 			ip := scanner.Text()
 			go func(ip string) {
 				defer wg.Done()
-				executeCommand(ip, command, sshConfig)
+				executeCommand(ip, command, sshConfig, &sessions)
 			}(ip)
 		}
 	}
 	defer file.Close()
+
+	go HandleControlCGracefully(&sessions)
 
 	wg.Wait()
 
