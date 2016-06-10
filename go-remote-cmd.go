@@ -4,13 +4,11 @@ import (
 	"bufio"
 	"fmt"
 	"log"
-	"net"
 	"os"
 	"os/signal"
 	"sync"
 
 	"golang.org/x/crypto/ssh"
-	"golang.org/x/crypto/ssh/agent"
 )
 
 type allSessions struct {
@@ -18,16 +16,10 @@ type allSessions struct {
 	host    string
 }
 
-// SSHAgent Authenticate using ssh private key.
-// Reads the private key cert from the ssh agent of the operating system
-func SSHAgent() ssh.AuthMethod {
-	if sshAgent, err := net.Dial("unix", os.Getenv("SSH_AUTH_SOCK")); err == nil {
-		return ssh.PublicKeysCallback(agent.NewClient(sshAgent).Signers)
-	}
-	return nil
-}
+func executeCommand(ip string, command string, s *[]allSessions) {
 
-func executeCommand(ip string, command string, sshConfig *ssh.ClientConfig, s *[]allSessions) {
+	sshConfig := SSHConfig("app")
+
 	host := fmt.Sprintf("%s:%s", ip, "22")
 	connection, err := ssh.Dial("tcp", host, sshConfig)
 	if err != nil {
@@ -81,11 +73,6 @@ func main() {
 	var wg sync.WaitGroup
 	var sessions []allSessions
 
-	sshConfig := &ssh.ClientConfig{
-		User: "app",
-		Auth: []ssh.AuthMethod{SSHAgent()},
-	}
-
 	i := 0
 
 	file, err := os.Open(ipsFile)
@@ -97,7 +84,7 @@ func main() {
 			ip := scanner.Text()
 			go func(ip string) {
 				defer wg.Done()
-				executeCommand(ip, command, sshConfig, &sessions)
+				executeCommand(ip, command, &sessions)
 			}(ip)
 		}
 	}
