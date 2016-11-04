@@ -8,10 +8,6 @@ import (
 	"golang.org/x/crypto/ssh/agent"
 )
 
-func init() {
-
-}
-
 // SSHAgent Authenticate using ssh private key.
 // Reads the private key cert from the ssh agent of the operating system
 func SSHAgent() ssh.AuthMethod {

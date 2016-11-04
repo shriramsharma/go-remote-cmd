@@ -20,34 +20,37 @@ func executeCommand(ip string, command string, s *[]allSessions) {
 
 	sshConfig := SSHConfig("app")
 
-	host := fmt.Sprintf("%s:%s", ip, "22")
-	connection, err := ssh.Dial("tcp", host, sshConfig)
-	if err != nil {
-		log.Fatal(err)
-	}
+	if sshConfig != nil {
 
-	session, err := connection.NewSession()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	*s = append(*s, allSessions{session, ip})
-
-	stdout, err := session.StdoutPipe()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	scanner := bufio.NewScanner(stdout)
-
-	go func() {
-		for scanner.Scan() {
-			fmt.Printf("%s %s\n", "\x1b[36m"+ip+"\x1b[0m", scanner.Text())
+		host := fmt.Sprintf("%s:%s", ip, "22")
+		connection, err := ssh.Dial("tcp", host, sshConfig)
+		if err != nil {
+			log.Fatal(err)
 		}
-	}()
 
-	if err := session.Run(command); err != nil {
-		log.Fatal(err)
+		session, err := connection.NewSession()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		*s = append(*s, allSessions{session, ip})
+
+		stdout, err := session.StdoutPipe()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		scanner := bufio.NewScanner(stdout)
+
+		go func() {
+			for scanner.Scan() {
+				fmt.Printf("%s %s\n", "\x1b[36m"+ip+"\x1b[0m", scanner.Text())
+			}
+		}()
+
+		if err := session.Run(command); err != nil {
+			log.Fatal(err)
+		}
 	}
 
 }
