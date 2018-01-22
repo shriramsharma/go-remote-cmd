@@ -45,6 +45,7 @@ func executeCommand(ip string, command string, s *[]allSessions) {
 		go func() {
 			for scanner.Scan() {
 				fmt.Printf("%s %s\n", "\x1b[36m"+ip+"\x1b[0m", scanner.Text())
+				//fmt.Printf("%s\n", scanner.Text())
 			}
 		}()
 
